@@ -9,22 +9,31 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+This document was created for a Spring 2023 workshop, a collaboration between Digital Liberal Arts and Spanish, Italian, and Portuguese grad students. This RMarkdown file is meant to serve as a general guide for basic data visualization which can be achieved using R/R Studio, ggplot2, and a number of other tools. To understand how to use these tools, we will use data available through the _languageR_ package. 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+This guide assumes a beginner-level understanding of R and R Markdown.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+### Getting Started: Loading Packages
 
-```{r cars}
-summary(cars)
+In this guide, we will explore data visualization primarily through the package ggplot2. If you have already downloaded ggplot2, here we will load the package into your library. I am also recommending that you load the packages _tidyverse_ and _RColorBrewer_. These can be used to help clean data as you visualize and create aesthetically pleasing or need-specific (e.g., color vision deficiency, branding purposes) color schemes in your plots. If you do not have the packages installed yet, run the first chunk of code to install them. Then, run the second chunk to load those packages into your library.
+
+```{r getting started - install packages, eval=FALSE, echo=TRUE}
+install.packages(c("languageR", "ggplot2", "tidyverse", "RColorBrewer"))
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r getting started - load packages, eval=FALSE, echo=TRUE}
+library(languageR)
+library(ggplot2)
+library(tidyverse)
+library(RColorBrewer)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### The Basics of Data Visualization
+
+Data visualization is all about storytelling! What do your data say, and how can we read that concisely from the figures that you produce? Your visual interpretation should be clearly labeled in a way that is easy to read. For example, data involving time is best interpreted when time is placed on the x-axis of a graph or plot. Quantities, we can understand well from a horizontal perspective. To consider these design elements in a plot, we must first consider the type of data that we have: 
+
+* **Continuous**: This type of data includes data such as reaction/response times (RTs), duration, frequencies, etc. 
+* **Categorical**: This type of data includes grouped variables which do not inherently have a ranking, such as vowels, education, gender, etc. 
+* **Ordinal**: This type of data includes grouped variables with inherent order or ranking such as Likert scale responses, ratings, acceptability judgments, etc. 
+
