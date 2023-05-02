@@ -1,0 +1,478 @@
+---
+title: "SIP/DLA Data Visualization Workshop"
+author: "Lindsey Chandler, Ph.D."
+date: "2023-04-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Visualization
+
+This informal meeting is meant to provide a brief introduction into data visualization in R using the package ggplot2, among other resources which can bring your visualization preferences to life. This meeting assumes a beginner understanding of R syntax, RMarkdown, and ggplot2.
+
+We will discuss:
+
+* Different types of categorical data visualization
+* A brief introduction into continuous data visualization geared toward linguists (e.g., RTs, vowel duration)
+* Extracting values from mixed effects model outputs to plot
+* Special considerations for customization
+* Best practices for data formatting 
+
+For the first part of the workshop, we are going to use the package **languageR**, a package which includes open-access data frames, to examine categorical variables from the dataframe **dative**. Then, we will use the **vowels** dataset that I shared with you (this is my data!) to analyze continuous data outcomes. 
+
+To start our analysis, we are going to need the following packages: 
+
+* **languageR**: Analyzing Linguistic Data: A Practical Introduction to Statistics
+* **ggplot2**: For visualizing both raw/tidy and statistically-derived datapoints. 
+* **tidyverse/dplyr**: For quickly wrangling and manipulating data. You can also use ggplot commands with pipe!
+* **knitr**: To make this document possible to read, edit, and share. 
+* **RColorBrewer**: If you would like to know more about custom color palettes, this is a good package to have as well.
+
+Fore more information or documentation about each of these packages, you can visit their reference manuals online: 
+
+* [languageR](https://cran.r-project.org/web/packages/languageR/languageR.pdf)
+* [ggplot2](https://cran.r-project.org/web/packages/ggplot2/ggplot2.pdf)
+* [tidyverse](https://cran.r-project.org/web/packages/tidyverse/tidyverse.pdf)
+* [knitr](https://cran.r-project.org/web/packages/knitr/knitr.pdf)
+* [RColorBrewer](https://cran.r-project.org/web/packages/RColorBrewer/RColorBrewer.pdf) 
+
+### I. Getting Started 
+
+If you don't have any of the packages, run the lines you need from the following code (line 47) by changing *eval=FALSE* to *eval=TRUE* and running the chunk in your console. Note that you _can_ load ggplot2 as part of the tidyverse package, so both are not always necessary, but I always prefer to load it on its own so that (for my own peace of mind) I know that it is ready to go. 
+
+```{r package_install, eval=FALSE}
+install.packages(c("langaugeR", "ggplot2", "tidyverse", "dplyr", "knitr", "RColorBrewer"))
+```
+
+Once you have installed the packages you need, load all of them to your console by running the following chunk: 
+
+```{r package_load, eval=TRUE, message=FALSE}
+library(languageR)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(RColorBrewer)
+```
+
+### II. Types of Data
+
+There are three main types of data that we work with: 
+
+* **Continuous**: This includes data on a scale from 0 - infinity, such as reaction times (RTs), duration, formant frequencies, etc. 
+* **Categorical**: Class groupings where ranking does not inherently matter, such as education level, socioeconomic status, language group, treatment/participant group, vowel identity, verb type, etc. 
+* **Ordinal**: A type of data where ranking matters, such as rating scale, Likert scales, acceptability judgements, task number, etc. 
+
+The plot types that we use can vary depending on the story that we want to tell for each of these data types. For example, **categorical data** and **ordinal data** are often best represented with bar plots, box/violin plots, and scatterplots. **Continuous data**, including time-series data (e.g., RTs over the course of reading a sentence) is often represented by mean point plots which are connected via lines (or line plots), differential point plots, box plots, or mean point and standard error plots. 
+
+#### Categorial and Ordinal Plotting
+
+To examine categorical data plotting, we will use the dataset **dative**, which describes the realization of the dative as NP or PP in the Switchboard corpus and the Treebank Wall Street Journal Collection. For more information about this dataset, visit [this link](https://cran.r-project.org/web/packages/languageR/languageR.pdf). To learn more about the factors in the dataset, run the following code: 
+
+```{r examine_datives, echo=TRUE}
+?dative
+```
+
+Specifically, we see that the outcome variable **RealizationOfRecipient** is a binary categorical variable with two levels-- NP (Noun Phrase, n=2414) or PP (Prepositional Phrase, n=849): 
+```{r dative_table, echo=TRUE}
+head(dative) # The dative dataset comes from loading languageR. No need to attach it or find the file on your computer. If the languageR package is loaded, you have access to this dataframe. 
+
+barplot(table(dative$RealizationOfRecipient), main = "Distribution of NP or PP Recipient", xlab="Phrase Type")
+```
+
+There are a few ways we can examine how other linguistic factors impact the realization of an NP or PP recipient, such as comparing NP/PP realization versus modality, semantic class, length of recipient, animacy, definiteness, and accessibility (new vs. given vs. accessible referent). Prior to running statistical models, using **barplots**, **scatterplots**, **density plots**, and **boxplots** can be most useful for viewing how categorical outcomes are realized. Section III highlights considerations for when you create these plots. 
+
+### III. Categorical/Ordinal Data Plots 
+
+#### Barplots
+
+Bar plots are best for representing **categorical and ordinal** data along the x-axis, and counts, percentages, or some other numeric value on the y-axis, such as in Figure 1.
+
+```{r barplot, echo=TRUE}
+# Figure 1 and Figure 2 with Flipped Axes Arrangements
+ggplot(dative, aes(forcats::fct_infreq(SemanticClass), fill=RealizationOfRecipient))+
+  geom_bar()+
+  labs(title="Figure 1: NP and PP Realization by Semantic Class")
+```
+
+#### Boxplots & Violin Plots
+
+In addition to bar plots, box plots are common for visualizing categorical or ordinal data, when the y-axis value is *specifically* numeric. Boxplots offer a look at quartile (minimum, first quartile, median, third quartile, maximum) values of distributions, along with other extreme values such as outliers. The following Figure 4 highlights the number of NP or PP tokens given the length of the Recipient (in words). 
+```{r boxplot, echo=TRUE}
+ggplot(dative, aes(RealizationOfRecipient, LengthOfRecipient))+
+  geom_boxplot()+
+  labs(title="Figure 2: NP and PP Realization by Length of Recipient (In Words)")
+```
+
+We can also look at this same distribution using a violin plot. Wider portions of the violin plot indicate a greater distribution of tokens.
+```{r violin_plot, echo=TRUE}
+ggplot(dative, aes(RealizationOfRecipient, LengthOfRecipient))+
+  geom_violin()+
+  labs(title="Figure 3: NP and PP Realization by Length of Recipient (In Words)")
+```
+
+#### Density Plots
+
+Density plots measures the distribution of data via kernel density (a method of binning). It is used to approximate the probability density of a given variable. These are similar to histograms in that, in essence, they show distribution of your token count, but a bit more customizable and smooth, using ggplot:
+```{r density, echo=TRUE}
+vowels.raw <- read.csv("./vowels.csv")
+
+ggplot(vowels.raw, aes(vduration, fill=vowel)) + 
+  geom_density(alpha = 0.5) +
+  scale_color_brewer(palette="Set2")
+```
+
+
+#### Categorical scatterplots
+
+Categorical scatterplots show the distribution of outcomes by individual data point. This offers a more detailed view of distributions of data, rather than condensing the distribution into a box or violin plot. In Figure 4, the realization of the Recipient as NP or PP is plotted against the Length of the Recipient (in words). 
+```{r categorical_scatterplot, echo=TRUE}
+ggplot(dative, aes(RealizationOfRecipient, LengthOfRecipient))+
+  # size argument changes the point size; alpha argument changes transparency; position argument separates the points, rather than stacking them in a single line: 
+  geom_point(size=2, alpha=0.4, position="jitter")+
+  labs(title="Figure 4: NP and PP Realization by Length of Recipient (In Words)")
+```
+
+#### Other Useful Features 
+
+**Flipping Coordinates** || Sometimes , putting categorical variables on the y-axis instead may be useful for comparing distributions, especially when a higher distribution represents attainment, percentage, etc.. This can be done using *coord_flip()*, as in Figure 2. 
+```{r coord_flip, echo=TRUE}
+ggplot(dative, aes(forcats::fct_rev(fct_infreq(SemanticClass)), fill=RealizationOfRecipient))+
+  geom_bar()+
+  labs(title="Figure 5: NP and PP Realization by Semantic Class - Flipped Coordinates")+
+  # The following line of code flips the x- and y-axis: 
+  coord_flip()
+
+# Notes about this code:
+# The forcats::fct_infreq(x) and forcats::fct_rev(fct_infreq(x)) in the x argument order the bars by count from largest to smallest. This is useful in visualizing data by count, or when frequency matters. 
+# the coord_flip() layer reverses the x and y axes in the plot. 
+```
+
+**Side-by-Side Bar Arrangement** || The default bar arrangement for barplots stacks counts per category level, but sometimes we want to compare multiple outcomes within a given level (e.g., number of times a recipient is realized as a PP or NP based on modality, speech or writing). In this case, the argument *position = "dodge"* in the *geom_bar* layer places count bars side by side rather than stacked, as shown in Figure 3. We can actually see now that PP realizations of the Recipient were about the same per modality, but ultimately for a larger spoken section, NP is the clear preference.
+```{r barplot_dodge, echo=TRUE}
+ggplot(dative, aes(forcats::fct_infreq(Modality), fill=RealizationOfRecipient))+
+  labs(title="Figure 6: NP and PP Realization by Modality")+
+  # The argument position="dodge" in the geom_bar() layer presents the NP and PP outcomes side by side, rather than stacked. 
+  geom_bar(position="dodge")
+```
+
+**Token Count** || For the most transparent plot information, we can also include the exact number of counts of an outcome variable. This saves us from having to estimate counts (if not already given elsewhere) from looking at a plot. Building off of the plot from above, the following code includes total counts: 
+```{r barplot_counts, echo=TRUE}
+ggplot(dative, aes(forcats::fct_infreq(Modality), fill=RealizationOfRecipient))+
+  geom_bar(position="dodge")+
+  labs(title="Figure 7: Token Counts of NP and PP Realization by Modality")+
+  # The following code adds individual counts for this plot: 
+  geom_text(stat='count', aes(label=after_stat(count)),
+            position=position_dodge(width=0.9), vjust=-0.2, size=4) 
+```
+
+**Legends, Labels, and Arrangements** || Of course, no plot is complete without making sure that all elements are labeled clearly and effectively. The code for Figure 8 includes elements which give us informative titles for the x- and y-axis, an informative title for the legend, full level names for NP and PP, and the option to move the placement of the legend.
+```{r labels, echo=TRUE}
+ggplot(dative, aes(forcats::fct_infreq(Modality), fill=RealizationOfRecipient))+
+  geom_bar(position="dodge")+
+  labs(title="Figure 8: Token Counts of NP and PP Realization by Modality")+
+  # The position, vjust, and size code center the numbers at the top of each bar. 
+  geom_text(stat='count', aes(label=after_stat(count)),
+            position=position_dodge(width=0.9), vjust=-0.2, size=4)+
+  # X-axis Label
+  xlab("Modality")+
+  # X-axis information, more formally presented
+  scale_x_discrete(labels=c("Spoken", "Written"))+
+  # Y-axis label
+  ylab("Token Count")+
+  # Legend label & descriptive level information 
+  scale_fill_discrete(name="Realization of Recipient", labels=c("Noun Phrase", "Verb Phrase"))+
+  # Change legend position (if desired. Change to "bottom", "top", "left", or "right")
+  theme(legend.position="bottom")
+```
+
+#### Quick Check:
+> If I wanted to show token counts for a variable side-by-side rather than stacked in a bar plot, what is the best code to include: 
+a) coord_flip(), 
+b) geom_bar(position="dodge"), 
+c) scale_x_discrete(), or 
+d) geom_point(position="jitter")? 
+
+### IV. Continuous Data Plots
+
+Continuous data plots can be represented using box/violin plots, but often we are aggregating a large number of data points to represent a mean continuous value for a particular group (e.g., RTs, formant frequencies, eye-tracking values, length/duration, etc.). These means are often represented as connected points, or points with standard deviation/standard error, so we can see how much the individual values vary. In this case, our data needs some manipulation first. 
+
+To examine continuous data manipulation and plotting, we will use the **vowels** data set which is included in this project. 
+
+*About this Data: This data was collected in 2016-2017 as part of the completion of a Master's project at North Carolina State University. The data frame contains information about voicing-dependent vowel duration (column vduration, in seconds). Voicing-depending vowel duration is a strong feature of English, wherein vowels tend to be longer when preceding voiced consonants such as /b, d, g/, compared to when they precede voiceless consonants /p, t, k/ (column consonant, column voicing). I examined this phenomenon in both open- and closed-syllable configurations, both word-internally and word-finally (column context), in English and Spanish words (column target), produced by L1 English and L1 Spanish participants (column l1). There are 1620 data points of measured vowel duration, which we can analyze against other categorical variables.* 
+
+We need to load this data frame into our environment. If you are using the R Project, you should be able to run the following code no problem, since it references a local working directory on your computer:  
+```{r vowels_load, echo=TRUE}
+head(vowels.raw)
+# Note, extra column X may load. This column is meaningless! 
+```
+
+We can use basic box plots to show the distribution of data, but if we want to quickly examine a figure and get the main takeaway, this can get a little busy.
+```{r vowel boxplot, echo=TRUE}
+ggplot(vowels.raw, aes(x=vowel, y=vduration, fill=l1))+
+  geom_boxplot()+
+  labs(title="Figure 9: Distribution of Vowel Durations")
+```
+
+In addition, if you are familiar with vowel research, you will know that vowel length is different given certain characteristics such as height. So, we need a plot that is better representative of the data.
+
+In this case, it is more useful to calculate *means* for vowel length given certain factors. To accomplish this, we can create summary statistics using dplyr, and then we can plot those descriptive statistics, *from within the pipe function*. 
+
+```{r summary stats, echo=TRUE, message=FALSE}
+vowels.raw %>%
+  # I want the mean vowel duration for each L1 group, and each target language they are speaking in
+  group_by(vowel, l1, target) %>%
+  summarize(mean(vduration), sd(vduration)) %>%
+  # Now here I enter the same plot code I would type out by itself, but in the pipe: 
+  ggplot(aes(x=factor(vowel, levels=c("i", "e", "a", "o", "u")), y=`mean(vduration)`, color=l1)) +
+  # Note the alpha (transparency) change here so you can see more about how the bars/points overlap. 
+    geom_line(aes(group=l1), alpha = 0.5, linewidth=1)+
+    geom_point(alpha=0.5, size=3)+
+  # Error pars created with the summarize function above, show standard deviation of vowel duration for each vowel. 
+    geom_errorbar(aes(ymin=`mean(vduration)`-`sd(vduration)`, ymax=`mean(vduration)`+`sd(vduration)`), alpha=0.5, linewidth=1)+
+    facet_grid(.~target, labeller=as_labeller(c(eng="Speaking English", snh="Speaking Spanish")))+
+    xlab("Vowel")+
+    ylab("Mean Duration (in milliseconds)")+
+  # Converting the y axis back to milliseconds
+    scale_y_continuous(labels=function(x)x*1000)+
+    labs(title="Figure 10: Mean Vowel Duration per Target Language")+
+    scale_color_discrete(name="First Language", labels=c("English", "Spanish"))+
+    theme(legend.position="bottom")
+```
+
+### V. Plotting from Mixed Effects Results
+
+ggplot is not just for plotting raw data! We can also extract effects values (mean, standard error, etc.) from model outputs and plot those means as well, to visualize the statistical outcomes of our models and drive home points about differences (especially the fun, significant ones) with compelling visuals. 
+
+To plot these, we need the **effects** package. Run this code (change *eval=FALSE* to *eval=TRUE*) if you need it: 
+
+```{r effects, echo=TRUE, eval=FALSE, message=FALSE}
+install.packages("effects")
+library(effects)
+
+# For the purposes of this workshop we will do a *very basic* model: 
+install.packages(c("lme4", "lmerTest", "lsmeans"))
+library(lme4)
+library(lmerTest)
+library(lsmeans)
+
+# Some basic cleaning: 
+vowels.raw$ms.duration <- vowels.raw$vduration*1000 # Converting to milliseconds
+
+# Sample model: 
+# (vowel.model <- lm(ms.duration ~ target*l1*voicing*place*vowelht, data = vowels.raw, REML = TRUE))
+
+## TARGET LANGUAGE MAIN EFFECT 
+
+# ef.target<-effect("target", vowel.model) -- Take the variable that you put into the model. 
+# ef.target<-as.data.frame(ef.target)
+# View(ef.target)
+
+# Plot target language main effect
+
+plot.ef.target <- ggplot(ef.target, aes(targetContrast, fit))+ # Use new data frame to plot, with the variables that you extracted using the effects package. 
+  geom_point(aes(shape=target, color=target), show.legend=F, size=4)+
+  geom_errorbar(aes(ymin=fit-se*1.96, ymax=fit+se*1.96, color=target), show.legend=F, width=0.4, size=1)+
+  labs(title="Average Duration (ms) per Target Language")+
+  xlab("Target Language")+ylab("Duration (ms) Fitted Values")+
+  theme(text=element_text(size=12, family="Times", face="bold"))+
+  scale_color_manual(values=c("grey0","grey28", "grey60"))+
+  scale_x_discrete(labels=c("-0.5" = "English", "0.5" = "Spanish"))
+plot.ef.target
+
+```
+
+To plot effects, we need to extract means and standard errors from the model output, which means that the output should be saved to an object in R. 
+
+### VI. Other Useful Tools
+
+#### RColorBrewer and Color Palette Selection 
+
+Creating color palettes in R can be done using default color palettes, but if you want to customize your look based on certain characteristics such as branding, color vision differences (e.g., color blindness), colors specific to your data (e.g., gender), or even Wes Anderson films, then custom color palettes are for you. To create your own custom palette, there are some things to consider, such as the type of data you are trying to plot: 
+
+* **Sequential**: These are suited for ordered data which show scaling from low to high, for example. Lightness indicates low data values whereas dark colors indicate higher data values. This is useful for maps, density, ratings, etc. 
+* **Diverging**: Diverging palettes put equal emphasis on mid-range values. The critical break falls in the middle with a neutral color, and low and high extremes are contrasted with dark colors of contrasting hues, such as heat maps. 
+* **Qualitative**: These palettes are used to create visual differences between classes, such as nominal or categorical data. 
+
+For example, sequential color palettes might not best suit categorical data, as it can make your plot hard to read or distinguish factors. You can use sequential palettes to highlight important factors of analysis, but this is always up to you! 
+
+One useful package is the RColorBrewer package. This package provides color management for visuals in R. It provides several pre-made color palettes, as well as the opportunity to create your own palettes. For more information about RColorBrewer, you can visit [this link](https://cran.r-project.org/web/packages/RColorBrewer/RColorBrewer.pdf).  
+
+For a full reference of all the color codes you can use in R, not just with RColorBrewer, here is a [cheat sheet](https://www.nceas.ucsb.edu/sites/default/files/2020-04/colorPaletteCheatsheet.pdf).
+
+To select a palette, quickly reference pre-made RCB palettes: 
+```{r rcb_selection, eval=TRUE, echo=TRUE}
+display.brewer.all()
+
+# For colorblind-friendly palettes only, use the argument colorBlindFriendly=TRUE. 
+```
+
+To use different palettes in your graphs, you can use the following line of code: 
+
+```{r color_palettes, eval=FALSE, echo=TRUE}
+# primary ggplot information +
+scale_color_brewer() # Applies scale color brewer function
+
+# Possible arguments: 
+scale_color_brewer(palette = "PiYg") # palette argument selects from pre-made palettes given RCB name. 
+scale_color_brewer(palette = "PiYg", direction = 1) # direction chooses order for colors. 1 indicates order as shown on palette guide, -1 reverses the color order. 
+```
+
+To create your own custom color palette, you can create a vector with specific names, or even HEX codes (a 6-digit/letter code) and apply that vector in color functions. The following code defines a custom color palette with Penn State blues and vibrant corresponding colors. More information about PSU colors can be found on the [PSU Design Essentials/Brand Book website](https://brand.psu.edu/design-toolkit/design-essentials#:~:text=The%20signature%20brand%20blues%E2%80%94Nittany,in%20communities%20across%20the%20Commonwealth.). 
+```{r custom colors, eval=TRUE, echo=TRUE}
+# First, define the color palette vector: 
+my_colors <- c("#001E44", "#009CDE", "#008755", "#99CC00", "#FFD100", "#E98300", "#F2665E", "#491D70", "#000321")
+
+# Then, in your ggplot code: 
+# scale_color_manual(values=my_colors)
+
+# Sample code
+ggplot(vowels.raw, aes(x=factor(vowel, levels=c("i", "e", "a", "o", "u")), y=vduration, fill=vowel))+
+  geom_boxplot()+
+  labs(title="Figure 11: Distribution of Vowel Durations (Custom Color Palette)")+
+  scale_fill_manual(values=my_colors)
+
+```
+
+#### ggokabeito
+
+The package **ggokabeito** offers a custom palette which is colorblind-friendly. More information can be found [here](https://cran.r-project.org/web/packages/ggokabeito/ggokabeito.pdf). 
+
+To use this colorblind-friendly palette in your graphs, you can use the following line of code: 
+
+```{r okabe_ito, eval=TRUE, echo=TRUE, message=FALSE}
+library(ggokabeito)
+
+# primary ggplot information +
+# scale_color_okabe_ito()
+
+# Here is an example: 
+
+vowels.raw %>%
+  group_by(vowel, l1, target) %>%
+  summarize(mean(vduration), sd(vduration)) %>%
+  ggplot(aes(x=factor(vowel, levels=c("i", "e", "a", "o", "u")), y=`mean(vduration)`, color=l1)) +
+  geom_line(aes(group=l1), alpha = 0.5, linewidth=1)+
+  geom_point(alpha=0.5, size=3)+
+  geom_errorbar(aes(ymin=`mean(vduration)`-`sd(vduration)`, ymax=`mean(vduration)`+`sd(vduration)`), alpha=0.5, linewidth=1)+
+  facet_grid(.~target, labeller=as_labeller(c(eng="Speaking English", snh="Speaking Spanish")))+
+  xlab("Vowel")+
+  ylab("Mean Duration (in milliseconds)")+
+  scale_y_continuous(labels=function(x)x*1000)+
+  labs(title="Figure 10: Mean Vowel Duration per Target Language")+
+# Modified scale_color_discrete to scale_color_okabe_ito. These commands take the same arguments. 
+  scale_color_okabe_ito(name="First Language", labels=c("English", "Spanish"))+
+  theme(legend.position="bottom")
+
+```
+
+### VII. Saving Your Work! (!!!!!)
+
+When you land on a plot with which you are satisfied, you should export it to your files. R Studio offers a very convenient point-and-click method for saving plots, under the Plots tab in the files/plots/packages pane: the Export function which lets you save your plot as an image file or PDF. You can also use different command options for saving your work. Here are two options for saving your plots: the *ggsave* command, and saving by the particular file type you want. It is also useful to keep a list of figures and comments of descriptions of figures when you save them. 
+
+```{r saving plots, echo=TRUE, eval=FALSE, message=FALSE}
+# ggsave
+
+# ggsave(
+#  filename,
+#  plot = last_plot(),
+#  device = NULL, # can be png, eps, ps, tex, pdf, jpeg, tiff, png, etc. 
+#  path = NULL, # defaults to working directory! 
+#  scale = 1,
+#  width = NA,
+#  height = NA,
+#  units = c("in", "cm", "mm", "px"),
+#  dpi = 300,
+#  limitsize = TRUE, # When TRUE, ggsave will not save images larger than 50x50 inches. 
+#  bg = NULL,
+#  ...
+# )
+
+# saving specific file types: BMP, JPEG, TIFF and PNG file types
+
+# bmp(filename = "Rplot%03d.bmp",
+#   width = 480, height = 480, units = "px", pointsize = 12,
+#   bg = "white", res = NA, …,
+#   type = c("cairo", "Xlib", "quartz"), antialias)
+
+# jpeg(filename = "Rplot%03d.jpeg",
+#     width = 480, height = 480, units = "px", pointsize = 12,
+#     quality = 75,
+#     bg = "white", res = NA, …,
+#     type = c("cairo", "Xlib", "quartz"), antialias)
+
+# png(filename = "Rplot%03d.png",
+#    width = 480, height = 480, units = "px", pointsize = 12,
+#     bg = "white",  res = NA, …,
+#    type = c("cairo", "cairo-png", "Xlib", "quartz"), antialias)
+
+#tiff(filename = "Rplot%03d.tiff",
+#     width = 480, height = 480, units = "px", pointsize = 12,
+#     compression = c("none", "rle", "lzw", "jpeg", "zip", "lzw+p", "zip+p"),
+#     bg = "white", res = NA,  …,
+#     type = c("cairo", "Xlib", "quartz"), antialias)
+
+# Example: Saving Figure 10
+vowel.means <- vowels.raw %>%
+  group_by(vowel, l1, target) %>%
+  summarize(mean(vduration), sd(vduration))
+
+fig10 <- ggplot(vowel.means, aes(x=factor(vowel, levels=c("i", "e", "a", "o", "u")), y=`mean(vduration)`, color=l1)) +
+    geom_line(aes(group=l1), alpha = 0.5, linewidth=1)+
+    geom_point(alpha=0.5, size=3)+
+    geom_errorbar(aes(ymin=`mean(vduration)`-`sd(vduration)`, ymax=`mean(vduration)`+`sd(vduration)`), alpha=0.5, linewidth=1)+
+    facet_grid(.~target, labeller=as_labeller(c(eng="Speaking English", snh="Speaking Spanish")))+
+    xlab("Vowel")+
+    ylab("Mean Duration (in milliseconds)")+
+    scale_y_continuous(labels=function(x)x*1000)+
+    labs(title="Figure 10: Mean Vowel Duration per Target Language")+
+    scale_color_discrete(name="First Language", labels=c("English", "Spanish"))+
+    theme(legend.position="bottom")
+
+png(filename="./fig10.png", width=6.5, height=4.2, res=300, units="in")
+# Figure 10: Mean vowel duration per target language 
+fig10
+dev.off()
+
+```
+
+### VIII. Best Practices for Dataframe Formatting
+
+Of course, no plot can be made successfully without a data frame which conforms to the format that best suits your needs. Here are some questions that you can ask yourself about your data frame that will help you prepare to visualize and analyze: 
+
+* What format is your data frame in? Long, or wide? Long format is typical, where columns represent individual factors/variables and rows represent unique observations. 
+* What are the class types of your data? Numeric, factor, character, integer? 
+* If you are working with character factors, are all of the levels uniform in terms of spelling, capitalization, spacing, etc.? 
+* Are any and all numeric variables formatted in the best way? For example, the vowels.raw dataframe includes duration in seconds, but often linguists discuss vowel length in milliseconds, so this factor had to be transformed while I was plotting. 
+* Do you have any missing values? Is this intentional, or something to be fixed with data manipulation? Should these rows/observations be removed altogether? 
+
+Considering these wrangling questions before visualization and analysis will prevent many, if not all, errors which may hinder the process of analysis. There are extra resources listed at the end of this document which can help in the wrangling and formatting process. 
+
+### IX. Extra Resources
+
+For more advanced considerations for visualizing data, you can consult: 
+
+* Healy, K. (2018). Data visualization: a practical introduction. Princeton University Press.
+
+In addition, there is a folder within this R Project called "Cheat Sheets" which contains PDFs or JPGs of various useful packages and capabilities in R for data frame manipulation, pipe commands, and more. 
+
+### X. Open-Ended Q&A / Bring Your Data 
+
+#### Plotting Proportions & Labelling: 
+
+```{r prop plot, echo=TRUE, eval=FALSE}
+cp1 %>% # if you want a new df you can create one, not obligatory
+  group_by(verbGroup) %>% # all factors you want to form your plot
+  mutate(Freq_vG = n()) %>% # get frequency of tokens 
+  group_by(verbGroup, Freq_vG, vcp) %>% # all the groups you want means for, such as verb type. 
+  summarise(Freq_vcp = n(), Prop = Freq_vcp / Freq_vG) %>%
+  distinct() %>% ##gets rid of all the duplicates 
+  ggplot(aes(x = verbGroup, y = Prop, fill = vcp)) +
+  geom_col() +
+  geom_text(aes(label=scales::percent(Prop)), position=position_stack(0.5)) 
+```
+
+
